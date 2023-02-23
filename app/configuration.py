@@ -48,6 +48,12 @@ class Configuration:
     def get_usernames(self):
         return [u.name for u in self.users]
 
+    def get_access_linodes(self, chat_id):
+        for user in self.users:
+            if user.chat_id == chat_id:
+                return user.access
+        raise AssertionError(f'Invalid state: unable to find user with chat ID {chat_id}')
+
 
 class ConfigurationError(ValueError):
     pass

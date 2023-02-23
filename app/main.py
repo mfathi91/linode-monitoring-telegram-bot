@@ -55,7 +55,7 @@ STATUS_END = 1
 # ------------------ status conversation --------------------
 async def status_choose_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logging.info("User %s issued /status command", update.message.from_user.first_name)
-    reply_keyboard = [[linode.label] for linode in config.get_linodes()]
+    reply_keyboard = [[linode.label] for linode in config.get_access_linodes(update.message.chat_id)]
     await update.message.reply_text(
         'Which Linode do you want to see?',
         reply_markup=ReplyKeyboardMarkup(
