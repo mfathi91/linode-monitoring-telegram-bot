@@ -1,0 +1,8 @@
+# IDEA temp files
+.idea/
+__pycache__/
+
+# Python virtual env
+venv/
+
+# Project files to ignore
