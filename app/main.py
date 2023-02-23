@@ -17,7 +17,7 @@ from telegram.ext import (
     filters,
 )
 
-from app.configuration import Configuration
+from configuration import Configuration
 
 # Ensure the env variable is present
 version_env = os.environ.get('VERSION', None)
