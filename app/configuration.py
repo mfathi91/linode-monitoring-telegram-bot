@@ -24,7 +24,10 @@ class Configuration:
             # Initialize users
             self.users = []
             for user in data['users']:
-                access = self.linodes if user.get('admin', False) else [li for li in self.linodes if li.id in user['access']]
+                if 'admin' in user:
+                    access = self.linodes
+                else:
+                    access = [li for li in self.linodes if li.id in user['access']]
                 self.users.append(User(user['name'], user['telegram_chat_id'], access))
 
     def get_token(self) -> str:
@@ -53,6 +56,13 @@ class Configuration:
             if user.chat_id == chat_id:
                 return user.access
         raise AssertionError(f'Invalid state: unable to find user with chat ID {chat_id}')
+
+    def can_user_access_linode(self, user_chat_id: int, linode_label: str) -> bool:
+        for user in self.users:
+            if user.chat_id == user_chat_id:
+                for user_linode in user.access:
+                    if user_linode.label == linode_label:
+                        return True
 
 
 class ConfigurationError(ValueError):

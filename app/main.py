@@ -2,10 +2,9 @@ import logging
 import math
 import os
 import sys
-import uuid
+from http import HTTPStatus
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import requests
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
@@ -57,7 +56,7 @@ async def status_choose_wallet(update: Update, context: ContextTypes.DEFAULT_TYP
     logging.info("User %s issued /status command", update.message.from_user.first_name)
     reply_keyboard = [[linode.label] for linode in config.get_access_linodes(update.message.chat_id)]
     await update.message.reply_text(
-        'Which Linode do you want to see?',
+        'سرور مورد نظر را انتخاب کنید',
         reply_markup=ReplyKeyboardMarkup(
             reply_keyboard, one_time_keyboard=True
         ),
@@ -67,24 +66,31 @@ async def status_choose_wallet(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     linode_label = update.message.text
-    linode_id = [li.id for li in config.get_linodes() if li.label == linode_label][0]
+    if config.can_user_access_linode(update.message.chat_id, linode_label):
+        linode_id = [li.id for li in config.get_linodes() if li.label == linode_label][0]
 
-    last_month_usage = get_last_month_usage(linode_id)
-    if last_month_usage:
-        response = f'Network usage in the last 30 days: {last_month_usage}'
-    else:
-        response = 'Statistics not available. Try again later.'
-
-    await update.message.reply_text(
-        response,
-        reply_markup=ReplyKeyboardRemove(),
-    )
-    photo_path = get_last_24h_usage(linode_id)
-    print(photo_path)
-    with open(photo_path, 'rb') as ph:
-        await update.message.reply_photo(
-            photo=ph
+        network_past_24h = get_network_usage_past_24h(linode_id)
+        response = 'مصرف تقریبی در ۲۴ ساعت گذشته:\n'
+        response += network_past_24h or '-'
+        await update.message.reply_text(
+            response,
+            reply_markup=ReplyKeyboardRemove(),
         )
+
+        network_past_30d = get_network_usage_past_30d(linode_id)
+        response = 'مصرف تقریبی در ۳۰ روز گذشته:\n'
+        response += network_past_30d or '-'
+        await update.message.reply_text(
+            response,
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return ConversationHandler.END
+
+
+# ------------------ about command --------------------
+async def about_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logging.info("User %s issued /about command", update.message.from_user.first_name)
+    await update.message.reply_text(text=f'VPN Monitoring Telegram Bot v{version_env}')
     return ConversationHandler.END
 
 
@@ -93,13 +99,13 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logging.info("User %s issued /cancel command", update.message.from_user.first_name)
     context.chat_data.clear()
     await update.message.reply_text(
-        'Ok, the process is canceled.', reply_markup=ReplyKeyboardRemove()
+        'اوکی. پردازش کنسل شد.', reply_markup=ReplyKeyboardRemove()
     )
     return ConversationHandler.END
 
 
 # --------------------- Utility methods -----------------------
-def convert_size(size_bytes: int):
+def convert_size(size_bytes: int) -> str:
     if size_bytes == 0:
         return "0B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
@@ -109,24 +115,28 @@ def convert_size(size_bytes: int):
     return "%s %s" % (s, size_name[i])
 
 
-def get_last_month_usage(linode_id: str):
-    headers = {'Authorization': f"Bearer {config.get_linode_pat()}"}
-    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/transfer', headers=headers).json()
-    return convert_size(response['used']) if 'used' in response else None
+def get_authorization_header():
+    return {'Authorization': f"Bearer {config.get_linode_pat()}"}
 
 
-def get_last_24h_usage(linode_id: str) -> str:
+def get_network_usage_past_30d(linode_id: str) -> str:
+    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/transfer', headers=get_authorization_header())
+    if response.status_code == HTTPStatus.OK:
+        response_json = response.json()
+        if 'used' in response_json:
+            return convert_size(response_json['used'])
+
+
+def get_network_usage_past_24h(linode_id: str) -> str:
     headers = {'Authorization': f"Bearer {config.get_linode_pat()}"}
-    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/stats', headers=headers).json()
-    megabit_per_second = [elem[1]/1000000 for elem in response['data']['netv4']['out']]
-    plt.cla()
-    plt.plot(megabit_per_second)
-    plt.xlabel('Time')
-    plt.ylabel('Network Usage (megabit/sec)')
-    plt.title('Network Usage in the Last 24 Hours')
-    path = f'/tmp/{uuid.uuid4()}.png'
-    plt.savefig(path)
-    return path
+    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/stats', headers=headers)
+    if response.status_code == HTTPStatus.OK:
+        response_json = response.json()
+        if 'data' in response_json:
+            bit_per_second = [sample[1] for sample in response_json['data']['netv4']['out']]
+            # Samples are in 5-minute intervals
+            bytes_24hour = sum([(b * 5 * 60) for b in bit_per_second]) / 8
+            return convert_size(bytes_24hour)
 
 
 def main():
@@ -139,6 +149,9 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)],
     )
     application.add_handler(wallet_status_handler)
+
+    # Add command handler to get general information about the bot
+    application.add_handler(CommandHandler('about', about_handler, filters.User(config.get_chat_ids())))
 
     # Start the Bot
     application.run_polling()
