@@ -51,6 +51,13 @@ application = Application.builder().token(config.get_token()).build()
 STATUS_END = 1
 
 
+# ------------------ start command --------------------
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logging.info("User %s issued /start command", update.message.from_user.first_name)
+    await update.message.reply_text(text=f'فرمان مورد نظر را از منو انتخاب کنید')
+    return ConversationHandler.END
+
+
 # ------------------ status conversation --------------------
 async def status_choose_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logging.info("User %s issued /status command", update.message.from_user.first_name)
@@ -140,6 +147,9 @@ def get_network_usage_past_24h(linode_id: str) -> str:
 
 
 def main():
+    # Add start command handler
+    application.add_handler(CommandHandler('start', start_handler, filters.User(config.get_chat_ids())))
+
     # Add conversation handler for getting wallet status
     wallet_status_handler = ConversationHandler(
         entry_points=[CommandHandler('status', status_choose_wallet, filters.User(config.get_chat_ids()))],
