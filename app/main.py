@@ -77,7 +77,7 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         linode_id = [li.id for li in config.get_linodes() if li.label == linode_label][0]
 
         network_past_24h = get_network_usage_past_24h(linode_id)
-        response = 'مصرف تقریبی در ۲۴ ساعت گذشته:\n'
+        response = 'حجم ترافیک مصرفی تقریبی در ۲۴ ساعت گذشته:\n'
         response += network_past_24h or '-'
         await update.message.reply_text(
             response,
@@ -85,7 +85,7 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         )
 
         network_past_30d = get_network_usage_past_30d(linode_id)
-        response = 'مصرف تقریبی در ۳۰ روز گذشته:\n'
+        response = 'حجم ترافیک مصرفی تقریبی در ۳۰ روز گذشته:\n'
         response += network_past_30d or '-'
         await update.message.reply_text(
             response,
