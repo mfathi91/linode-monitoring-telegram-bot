@@ -4,6 +4,7 @@ import os
 import sys
 from http import HTTPStatus
 from pathlib import Path
+from typing import Tuple
 
 import requests
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
@@ -76,17 +77,18 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if config.can_user_access_linode(update.message.chat_id, linode_label):
         linode_id = [li.id for li in config.get_linodes() if li.label == linode_label][0]
 
-        network_past_24h = get_network_usage_past_24h(linode_id)
-        response = 'حجم ترافیک مصرفی تقریبی در ۲۴ ساعت گذشته:\n'
-        response += network_past_24h or '-'
         await update.message.reply_text(
-            response,
-            reply_markup=ReplyKeyboardRemove(),
+            "در حال پردازش...",
+            reply_markup=ReplyKeyboardRemove()
         )
 
-        network_past_30d = get_network_usage_past_30d(linode_id)
-        response = 'حجم ترافیک مصرفی تقریبی در ۳۰ روز گذشته:\n'
-        response += network_past_30d or '-'
+        network_usage_1h, network_usage_24h, network_usage_30d = get_network_usage(linode_id)
+        response = 'حجم ترافیک مصرفی تقریبی در ۱ ساعت گذشته:' \
+                   f'\n{network_usage_1h or "-"}\n\n' \
+                   'حجم ترافیک مصرفی تقریبی در ۲۴ ساعت گذشته:' \
+                   f'\n{network_usage_24h or "-"}\n\n' \
+                   f'حجم ترافیک مصرفی تقریبی در ۳۰ روز گذشته:' \
+                   f'\n{network_usage_24h or "-"}\n\n'
         await update.message.reply_text(
             response,
             reply_markup=ReplyKeyboardRemove(),
@@ -126,6 +128,21 @@ def get_authorization_header():
     return {'Authorization': f"Bearer {config.get_linode_pat()}"}
 
 
+def get_network_usage(linode_id: str) -> Tuple[str, str, str]:
+    network_stats = get_network_stats(linode_id)
+    network_usage_past_1h = get_network_usage_from_stats(network_stats, '1h')
+    network_usage_past_24h = get_network_usage_from_stats(network_stats, '24h')
+    network_usage_past_30d = get_network_usage_past_30d(linode_id)
+    return network_usage_past_1h, network_usage_past_24h, network_usage_past_30d
+
+
+def get_network_stats(linode_id: str):
+    headers = {'Authorization': f"Bearer {config.get_linode_pat()}"}
+    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/stats', headers=headers)
+    if response.status_code == HTTPStatus.OK:
+        return response.json()
+
+
 def get_network_usage_past_30d(linode_id: str) -> str:
     response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/transfer', headers=get_authorization_header())
     if response.status_code == HTTPStatus.OK:
@@ -134,16 +151,17 @@ def get_network_usage_past_30d(linode_id: str) -> str:
             return convert_size(response_json['used'])
 
 
-def get_network_usage_past_24h(linode_id: str) -> str:
-    headers = {'Authorization': f"Bearer {config.get_linode_pat()}"}
-    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/stats', headers=headers)
-    if response.status_code == HTTPStatus.OK:
-        response_json = response.json()
-        if 'data' in response_json:
-            bit_per_second = [sample[1] for sample in response_json['data']['netv4']['out']]
-            # Samples are in 5-minute intervals
-            bytes_24hour = sum([(b * 5 * 60) for b in bit_per_second]) / 8
-            return convert_size(bytes_24hour)
+def get_network_usage_from_stats(network_stats, duration: str) -> str:
+    if 'data' in network_stats:
+        bit_per_second_each_5m = [sample[1] for sample in network_stats['data']['netv4']['out']]
+        # Samples are in 5-minute intervals
+        bits_per_second = [(b * 5 * 60) for b in bit_per_second_each_5m]
+        if duration == '1h':
+            return convert_size(sum(bits_per_second[-1:-13:-1]) / 8)
+        elif duration == '24h':
+            return convert_size(sum(bits_per_second) / 8)
+        else:
+            raise ValueError('Unsupported operation error')
 
 
 def main():
