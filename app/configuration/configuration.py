@@ -1,6 +1,10 @@
 import json
-from typing import List
+import os
 from collections import namedtuple
+from pathlib import Path
+from typing import List
+
+from jsonschema import validate
 
 # Data holder classes
 Linode = namedtuple('Linode', ['label', 'id'])
@@ -10,8 +14,13 @@ User = namedtuple('User', ['name', 'chat_id', 'access'])
 class Configuration:
 
     def __init__(self, config_path: str, logger):
+        curr_dir = Path(f'{os.path.realpath(__file__)}').parent
+        with open(curr_dir.joinpath('configuration_schema.json'), 'r') as f:
+            schema = json.load(f)
+
         with open(config_path) as f:
             data = json.load(f)
+            validate(instance=data, schema=schema)
             self.token = data['token']
             self.linode_url = data['linode_url']
             self.linode_pat = data['linode_pat']

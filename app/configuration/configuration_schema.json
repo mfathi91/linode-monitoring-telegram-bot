@@ -1,0 +1,43 @@
+{
+    "type": "object",
+    "properties": {
+        "token": {"type": "string"},
+        "linode_url": {"type": "string"},
+        "linode_pat": {"type": "string"},
+        "linodes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "label": {"type": "string"},
+                    "id": {"type": "string"}
+                },
+                "required": ["label", "id"],
+                "additionalProperties": false
+            },
+            "uniqueItems": true
+        },
+        "users": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "telegram_chat_id": {"type": "integer"},
+                    "admin": {"type": "boolean"},
+                    "access": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "uniqueItems": true
+                    }
+                },
+                "required": ["name", "telegram_chat_id"],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required": ["token", "linode_url", "linode_pat"],
+    "additionalProperties": false
+}
