@@ -88,7 +88,7 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                    'حجم ترافیک مصرفی تقریبی در ۲۴ ساعت گذشته:' \
                    f'\n{network_usage_24h or "-"}\n\n' \
                    f'حجم ترافیک مصرفی تقریبی در ۳۰ روز گذشته:' \
-                   f'\n{network_usage_24h or "-"}\n\n'
+                   f'\n{network_usage_30d or "-"}\n\n'
         await update.message.reply_text(
             response,
             reply_markup=ReplyKeyboardRemove(),
