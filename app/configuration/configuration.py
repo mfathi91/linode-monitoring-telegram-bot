@@ -8,7 +8,7 @@ from jsonschema import validate
 
 # Data holder classes
 Linode = namedtuple('Linode', ['label', 'id'])
-User = namedtuple('User', ['name', 'chat_id', 'access'])
+User = namedtuple('User', ['name', 'chat_id', 'linodes'])
 
 
 class Configuration:
@@ -34,10 +34,10 @@ class Configuration:
             self.users = []
             for user in data['users']:
                 if 'admin' in user:
-                    access = self.linodes
+                    user_linodes = self.linodes
                 else:
-                    access = [li for li in self.linodes if li.id in user['access']]
-                self.users.append(User(user['name'], user['telegram_chat_id'], access))
+                    user_linodes = [li for li in self.linodes if li.id in user['access']]
+                self.users.append(User(user['name'], user['telegram_chat_id'], user_linodes))
 
     def get_token(self) -> str:
         return self.token
@@ -57,19 +57,25 @@ class Configuration:
     def get_linode_labels(self):
         return [li.label for li in self.linodes]
 
+    def get_linode_by_label(self, linode_label: str) -> Linode:
+        for linode in self.linodes:
+            if linode.label == linode_label:
+                return linode
+        raise ValueError(f'Unable to find linode with label "{linode_label}"')
+
     def get_usernames(self):
         return [u.name for u in self.users]
 
-    def get_access_linodes(self, chat_id):
+    def get_user_linodes(self, chat_id):
         for user in self.users:
             if user.chat_id == chat_id:
-                return user.access
-        raise AssertionError(f'Invalid state: unable to find user with chat ID {chat_id}')
+                return user.linodes
+        raise ValueError(f'Unable to find user with chat ID {chat_id}')
 
     def can_user_access_linode(self, user_chat_id: int, linode_label: str) -> bool:
         for user in self.users:
             if user.chat_id == user_chat_id:
-                for user_linode in user.access:
+                for user_linode in user.linodes:
                     if user_linode.label == linode_label:
                         return True
 

@@ -62,7 +62,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 # ------------------ status conversation --------------------
 async def status_choose_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logging.info("User %s issued /status command", update.message.from_user.first_name)
-    reply_keyboard = [[linode.label] for linode in config.get_access_linodes(update.message.chat_id)]
+    reply_keyboard = [[linode.label] for linode in config.get_user_linodes(update.message.chat_id)]
     await update.message.reply_text(
         'سرور مورد نظر را انتخاب کنید',
         reply_markup=ReplyKeyboardMarkup(
@@ -75,7 +75,7 @@ async def status_choose_wallet(update: Update, context: ContextTypes.DEFAULT_TYP
 async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     linode_label = update.message.text
     if config.can_user_access_linode(update.message.chat_id, linode_label):
-        linode_id = [li.id for li in config.get_linodes() if li.label == linode_label][0]
+        linode_id = config.get_linode_by_label(linode_label).id
 
         await update.message.reply_text(
             "در حال پردازش...",
