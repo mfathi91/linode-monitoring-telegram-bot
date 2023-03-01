@@ -94,6 +94,15 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             response,
             reply_markup=ReplyKeyboardRemove(),
         )
+
+        await update.message.reply_text(
+            'توجه: چنانچه ترافیک روزانه شما از 35 گیگابایت، '
+            'و ترافیک ماهانه شما از 1000 گیگابایت بیشتر شود، '
+            'این امکان وجود دارد که سیستم فیلترینگ وی پی ان شما '
+            'را شناسایی، و آن را محدود کند.',
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
         return ConversationHandler.END
 
 
@@ -131,8 +140,11 @@ def get_authorization_header():
 
 def get_network_usage(linode_id: str) -> Tuple[str, str, str]:
     network_stats = get_network_stats(linode_id)
-    network_usage_past_1h = get_network_usage_from_stats(network_stats, '1h')
-    network_usage_past_24h = get_network_usage_from_stats(network_stats, '24h')
+    network_usage_past_1h = None
+    network_usage_past_24h = None
+    if network_stats:
+        network_usage_past_1h = get_network_usage_from_stats(network_stats, '1h')
+        network_usage_past_24h = get_network_usage_from_stats(network_stats, '24h')
     network_usage_past_30d = get_network_usage_past_30d(linode_id)
     return network_usage_past_1h, network_usage_past_24h, network_usage_past_30d
 
