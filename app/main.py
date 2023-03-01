@@ -1,3 +1,4 @@
+import datetime
 import logging
 import math
 import os
@@ -83,11 +84,11 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         )
 
         network_usage_1h, network_usage_24h, network_usage_30d = get_network_usage(linode_id)
-        response = 'حجم ترافیک مصرفی تقریبی در ۱ ساعت گذشته:' \
+        response = 'حجم ترافیک مصرفی تقریبی در 1 ساعت گذشته:' \
                    f'\n{network_usage_1h or "-"}\n\n' \
-                   'حجم ترافیک مصرفی تقریبی در ۲۴ ساعت گذشته:' \
+                   'حجم ترافیک مصرفی تقریبی در 24 ساعت گذشته:' \
                    f'\n{network_usage_24h or "-"}\n\n' \
-                   f'حجم ترافیک مصرفی تقریبی در ۳۰ روز گذشته:' \
+                   f'حجم ترافیک مصرفی تقریبی در {datetime.datetime.today().day} روز گذشته:' \
                    f'\n{network_usage_30d or "-"}\n\n'
         await update.message.reply_text(
             response,
