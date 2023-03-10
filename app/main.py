@@ -124,7 +124,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # --------------------- Utility methods -----------------------
-def convert_size(size_bytes: int) -> str:
+def human_readable(size_bytes: int) -> str:
     if size_bytes == 0:
         return "0B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
@@ -161,7 +161,7 @@ def get_network_usage_past_30d(linode_id: str) -> str:
     if response.status_code == HTTPStatus.OK:
         response_json = response.json()
         if 'used' in response_json:
-            return convert_size(response_json['used'])
+            return human_readable(response_json['used'])
 
 
 def get_network_usage_from_stats(network_stats, duration: str) -> str:
@@ -170,9 +170,9 @@ def get_network_usage_from_stats(network_stats, duration: str) -> str:
         # Samples are in 5-minute intervals
         bits_per_second = [(b * 5 * 60) for b in bit_per_second_each_5m]
         if duration == '1h':
-            return convert_size(sum(bits_per_second[-1:-13:-1]) / 8)
+            return human_readable(sum(bits_per_second[-1:-13:-1]) / 8)
         elif duration == '24h':
-            return convert_size(sum(bits_per_second) / 8)
+            return human_readable(sum(bits_per_second) / 8)
         else:
             raise ValueError('Unsupported operation error')
 
