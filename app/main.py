@@ -101,8 +101,8 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text(
             'توجه: چنانچه ترافیک روزانه شما از 35 گیگابایت، '
             'و ترافیک ماهانه شما از 1000 گیگابایت بیشتر شود، '
-            'این امکان وجود دارد که سیستم فیلترینگ وی پی ان شما '
-            'را شناسایی، و آن را محدود کند.',
+            'این امکان وجود دارد که سرور ایرانی، سرویس شما '
+            'را محدود کند.',
             reply_markup=ReplyKeyboardRemove(),
         )
 
