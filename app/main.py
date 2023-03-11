@@ -85,11 +85,11 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
         network_usage_1h, network_usage_24h, network_usage_30d = get_network_usage(linode_id)
         response = 'حجم ترافیک مصرفی تقریبی در 1 ساعت گذشته:' \
-                   f'\n{network_usage_1h or "-"}\n\n' \
+                   f'\n{human_readable(network_usage_1h) or "-"}\n\n' \
                    'حجم ترافیک مصرفی تقریبی در 24 ساعت گذشته:' \
-                   f'\n{network_usage_24h or "-"}\n\n' \
+                   f'\n{human_readable(network_usage_24h) or "-"}\n\n' \
                    f'حجم ترافیک مصرفی تقریبی در {datetime.datetime.today().day} روز گذشته (از ابتدای ماه):' \
-                   f'\n{network_usage_30d or "-"}\n\n'
+                   f'\n{human_readable(network_usage_30d) or "-"}\n\n'
         await update.message.reply_text(
             response,
             reply_markup=ReplyKeyboardRemove(),
@@ -128,7 +128,7 @@ def human_readable(size_bytes: int) -> str:
     if size_bytes == 0:
         return "0B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    i = int(math.floor(math.log(size_bytes, 1024)))
+    i = int(math.floor(math.log(size_bytes, 1000)))
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
@@ -138,7 +138,7 @@ def get_authorization_header():
     return {'Authorization': f"Bearer {config.get_linode_pat()}"}
 
 
-def get_network_usage(linode_id: str) -> Tuple[str, str, str]:
+def get_network_usage(linode_id: str) -> Tuple[int, int, int]:
     network_stats = get_network_stats(linode_id)
     network_usage_past_1h = None
     network_usage_past_24h = None
@@ -156,23 +156,23 @@ def get_network_stats(linode_id: str):
         return response.json()
 
 
-def get_network_usage_past_30d(linode_id: str) -> str:
+def get_network_usage_past_30d(linode_id: str) -> int:
     response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/transfer', headers=get_authorization_header())
     if response.status_code == HTTPStatus.OK:
         response_json = response.json()
         if 'used' in response_json:
-            return human_readable(response_json['used'])
+            return response_json['used']
 
 
-def get_network_usage_from_stats(network_stats, duration: str) -> str:
+def get_network_usage_from_stats(network_stats, duration: str) -> int:
     if 'data' in network_stats:
         bit_per_second_each_5m = [sample[1] for sample in network_stats['data']['netv4']['out']]
         # Samples are in 5-minute intervals
         bits_per_second = [(b * 5 * 60) for b in bit_per_second_each_5m]
         if duration == '1h':
-            return human_readable(sum(bits_per_second[-1:-13:-1]) / 8)
+            return int(sum(bits_per_second[-1:-13:-1]) // 8)
         elif duration == '24h':
-            return human_readable(sum(bits_per_second) / 8)
+            return int(sum(bits_per_second) // 8)
         else:
             raise ValueError('Unsupported operation error')
 
