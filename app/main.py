@@ -128,6 +128,12 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 # --------------------- Utility methods -----------------------
 def human_readable(size_bytes: int) -> str:
+    """
+    Returns the human-readable string representation of the given size.
+
+    @param size_bytes: the size in bytes
+    @return: the human-readable string representation of the given size.
+    """
     if size_bytes == 0:
         return "0B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
@@ -138,10 +144,24 @@ def human_readable(size_bytes: int) -> str:
 
 
 def get_authorization_header():
+    """
+    Returns a header that is required for linode requests authorization.
+
+    @return: a header that is required for linode requests authorization.
+    """
     return {'Authorization': f"Bearer {config.get_linode_pat()}"}
 
 
 def get_network_usage(linode_id: str) -> Tuple[int, int, int]:
+    """
+    Retrieves the network usage data for the specified Linode ID for 1 hour,
+    24 hours, and past 30 days.
+
+    @param linode_id: The ID of the Linode for which network usage data is
+        to be retrieved.
+    @return: A tuple containing the network usage in bytes for the past
+        1 hour, past 24 hours, and past 30 days.
+    """
     network_stats = get_network_stats(linode_id)
     network_usage_past_1h = None
     network_usage_past_24h = None
@@ -153,6 +173,14 @@ def get_network_usage(linode_id: str) -> Tuple[int, int, int]:
 
 
 def get_network_stats(linode_id: str):
+    """
+    Retrieves the network stats for the specified Linode ID.
+
+    @param linode_id: The ID of the Linode for which the network stats are to
+        be retrieved.
+    @return: A dictionary containing the network stats for the specified
+        Linode ID.
+    """
     headers = {'Authorization': f"Bearer {config.get_linode_pat()}"}
     response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/stats', headers=headers)
     if response.status_code == HTTPStatus.OK:
@@ -160,6 +188,14 @@ def get_network_stats(linode_id: str):
 
 
 def get_network_usage_past_30d(linode_id: str) -> int:
+    """
+    Retrieves the network usage in bytes for the past 30 days for the specified
+    Linode ID.
+
+    @param linode_id: The ID of the Linode for which the network usage is to be
+        retrieved.
+    @return: The network usage in bytes for the past 30 days.
+    """
     response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}/transfer', headers=get_authorization_header())
     if response.status_code == HTTPStatus.OK:
         response_json = response.json()
@@ -168,6 +204,15 @@ def get_network_usage_past_30d(linode_id: str) -> int:
 
 
 def get_network_usage_from_stats(network_stats, duration: str) -> int:
+    """
+    Returns the network usage in bytes for a specified duration from the
+    given network stats.
+
+    @param network_stats: A dictionary containing the network usage statistics.
+    @param duration: The duration for which the network usage needs to be
+        calculated. It can either be '1h' or '24h'.
+    @return: The network usage in bytes for the specified duration.
+    """
     if 'data' in network_stats:
         bit_per_second_each_5m = [sample[1] for sample in network_stats['data']['netv4']['out']]
         # Samples are in 5-minute intervals
