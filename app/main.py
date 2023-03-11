@@ -186,15 +186,17 @@ def background_task_network_limiter(interval: int):
         for linode in config.get_linodes():
             network_stats = get_network_stats(linode.id)
             if network_stats:
-                actual_network_usage_24h_gb = int(get_network_usage_from_stats(network_stats, '24h') / 1024 / 1024 / 1024)
-                if actual_network_usage_24h_gb > linode.max_daily_network_gb and get_linode_status(linode.id) == 'running':
-                    logging.info(f'[{linode.label}] is consuming [{actual_network_usage_24h_gb} GB], '
-                                 f'which is more than the allowed limit [{linode.max_daily_network_gb} GB]. '
-                                 f'Attempting to shut it down...')
-                    if shutdown_linode(linode.id):
-                        logging.info(f'[{linode.label}] shut down successfully.')
-                    else:
-                        logging.warning(f'Unable to shut down [{linode.label}].')
+                actual_network_usage_24h_bytes = get_network_usage_from_stats(network_stats, '24h')
+                if actual_network_usage_24h_bytes:
+                    actual_network_usage_24h_gb = int(actual_network_usage_24h_bytes / 1024 / 1024 / 1024)
+                    if actual_network_usage_24h_gb > linode.max_daily_network_gb and get_linode_status(linode.id) == 'running':
+                        logging.info(f'[{linode.label}] is consuming [{actual_network_usage_24h_gb} GB], '
+                                     f'which is more than the allowed limit [{linode.max_daily_network_gb} GB]. '
+                                     f'Attempting to shut it down...')
+                        if shutdown_linode(linode.id):
+                            logging.info(f'[{linode.label}] shut down successfully.')
+                        else:
+                            logging.warning(f'Unable to shut down [{linode.label}].')
         time.sleep(interval)
 
 
