@@ -6,6 +6,9 @@ import sys
 from http import HTTPStatus
 from pathlib import Path
 from typing import Tuple
+import threading
+import time
+
 
 import requests
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
@@ -128,7 +131,7 @@ def human_readable(size_bytes: int) -> str:
     if size_bytes == 0:
         return "0B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    i = int(math.floor(math.log(size_bytes, 1000)))
+    i = int(math.floor(math.log(size_bytes, 1024)))
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
@@ -177,6 +180,40 @@ def get_network_usage_from_stats(network_stats, duration: str) -> int:
             raise ValueError('Unsupported operation error')
 
 
+# -------------- background task for network control ----------------
+def background_task_network_limiter(interval: int):
+    while True:
+        for linode in config.get_linodes():
+            network_stats = get_network_stats(linode.id)
+            if network_stats:
+                actual_network_usage_24h_gb = int(get_network_usage_from_stats(network_stats, '24h') / 1024 / 1024 / 1024)
+                if actual_network_usage_24h_gb > linode.max_daily_network_gb and get_linode_status(linode.id) == 'running':
+                    logging.info(f'[{linode.label}] is consuming [{actual_network_usage_24h_gb} GB], '
+                                 f'which is more than the allowed limit [{linode.max_daily_network_gb} GB]. '
+                                 f'Attempting to shut it down...')
+                    if shutdown_linode(linode.id):
+                        logging.info(f'[{linode.label}] shut down successfully.')
+                    else:
+                        logging.warning(f'Unable to shut down [{linode.label}].')
+        time.sleep(interval)
+
+
+def shutdown_linode(linode_id: str):
+    post_headers = {'Content-Type': 'application/json'}
+    post_headers.update(get_authorization_header())
+    response = requests.post(f'{config.get_linode_url()}/instances/{linode_id}/shutdown', headers=post_headers)
+    if response.status_code == HTTPStatus.OK and get_linode_status(linode_id) in ('offline', 'shutting_down'):
+        return True
+
+
+def get_linode_status(linode_id: str):
+    response = requests.get(f'{config.get_linode_url()}/instances/{linode_id}', headers=get_authorization_header())
+    if response.status_code == HTTPStatus.OK:
+        response_json = response.json()
+        return response_json.get('status')
+
+
+# --------------------- main method -----------------------
 def main():
     # Add start command handler
     application.add_handler(CommandHandler('start', start_handler, filters.User(config.get_chat_ids())))
@@ -193,6 +230,10 @@ def main():
 
     # Add command handler to get general information about the bot
     application.add_handler(CommandHandler('about', about_handler, filters.User(config.get_chat_ids())))
+
+    # Start the background task to ensure linodes network usage doesn't exceed a certain limit
+    network_usage_limiter = threading.Thread(target=background_task_network_limiter, daemon=True, args=(5*60,))
+    network_usage_limiter.start()
 
     # Start the Bot
     application.run_polling()

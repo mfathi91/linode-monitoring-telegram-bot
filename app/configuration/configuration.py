@@ -7,7 +7,7 @@ from typing import List
 from jsonschema import validate
 
 # Data holder classes
-Linode = namedtuple('Linode', ['label', 'id'])
+Linode = namedtuple('Linode', ['label', 'id', 'max_daily_network_gb'])
 User = namedtuple('User', ['name', 'chat_id', 'linodes'])
 
 
@@ -28,7 +28,7 @@ class Configuration:
             # Initialize linodes
             self.linodes = []
             for linode in data['linodes']:
-                self.linodes.append(Linode(linode['label'], linode['id']))
+                self.linodes.append(Linode(linode['label'], linode['id'], linode['max_daily_network_gb']))
 
             # Initialize users
             self.users = []

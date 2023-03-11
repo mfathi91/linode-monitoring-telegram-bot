@@ -10,9 +10,10 @@
                 "type": "object",
                 "properties": {
                     "label": {"type": "string"},
-                    "id": {"type": "string"}
+                    "id": {"type": "string"},
+                    "max_daily_network_gb": {"type": "integer"}
                 },
-                "required": ["label", "id"],
+                "required": ["label", "id", "max_daily_network_gb"],
                 "additionalProperties": false
             },
             "uniqueItems": true
