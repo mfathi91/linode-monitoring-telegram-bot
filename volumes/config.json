@@ -3,51 +3,15 @@
     "linode_url": "https://api.linode.com/v4/linode",
     "linode_pat": "YOUR_LINODE_PERSONAL_ACCESS_TOKEN",
     "linodes": [
-        {
-            "label": "linode-label-vps-1",
-            "id": "linode-id-vps-1"
-        },
-        {
-            "label": "linode-label-vps-2",
-            "id": "linode-id-vps-2"
-        },
-        {
-            "label": "linode-label-vps-3",
-            "id": "linode-id-vps-3"
-        },
-        {
-            "label": "linode-label-vps-4",
-            "id": "linode-id-vps-4"
-        },
-        {
-            "label": "linode-label-vps-5",
-            "id": "linode-id-vps-5"
-        }
+        {"label": "linode-label-vps-1", "id": "linode-id-vps-1", "max_daily_network_gb":  50},
+        {"label": "linode-label-vps-2", "id": "linode-id-vps-2", "max_daily_network_gb":  100},
+        {"label": "linode-label-vps-3", "id": "linode-id-vps-3", "max_daily_network_gb":  50},
+        {"label": "linode-label-vps-4", "id": "linode-id-vps-4", "max_daily_network_gb":  200},
+        {"label": "linode-label-vps-5", "id": "linode-id-vps-5", "max_daily_network_gb":  50}
     ],
     "users": [
-        {
-            "name": "Julia",
-            "telegram_chat_id": 123456789,
-            "admin": true
-        },
-        {
-            "name": "Jack",
-            "telegram_chat_id": 987654321,
-            "admin": false,
-            "access": [
-                "linode-id-vps-1",
-                "linode-id-vps-4"
-            ]
-        },
-        {
-            "name": "Emma",
-            "chat_id": 192837465,
-            "admin": false,
-            "access": [
-                "linode-id-vps-2",
-                "linode-id-vps-3",
-                "linode-id-vps-4"
-            ]
-        }
+        {"name": "Julia", "telegram_chat_id": 123456789, "admin": true},
+        {"name": "Jack", "telegram_chat_id": 987654321, "admin": false, "access": ["linode-id-vps-1", "linode-id-vps-4"]},
+        {"name": "Emma", "chat_id": 192837465, "admin": false, "access": ["linode-id-vps-2", "linode-id-vps-3", "linode-id-vps-4"]}
     ]
 }
