@@ -86,13 +86,16 @@ async def status_end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             reply_markup=ReplyKeyboardRemove()
         )
 
-        network_usage_1h, network_usage_24h, network_usage_30d = get_network_usage(linode_id)
+        network_usage_1h_bytes, network_usage_24h_bytes, network_usage_30d_bytes = get_network_usage(linode_id)
+        network_usage_1h = human_readable(network_usage_1h_bytes) if network_usage_1h_bytes else '-'
+        network_usage_24h = human_readable(network_usage_24h_bytes) if network_usage_24h_bytes else '-'
+        network_usage_30d = human_readable(network_usage_30d_bytes) if network_usage_30d_bytes else '-'
         response = 'حجم ترافیک مصرفی تقریبی در 1 ساعت گذشته:' \
-                   f'\n{human_readable(network_usage_1h) or "-"}\n\n' \
+                   f'\n{network_usage_1h}\n\n' \
                    'حجم ترافیک مصرفی تقریبی در 24 ساعت گذشته:' \
-                   f'\n{human_readable(network_usage_24h) or "-"}\n\n' \
+                   f'\n{network_usage_24h}\n\n' \
                    f'حجم ترافیک مصرفی تقریبی در {datetime.datetime.today().day} روز گذشته (از ابتدای ماه):' \
-                   f'\n{human_readable(network_usage_30d) or "-"}\n\n'
+                   f'\n{network_usage_30d}\n\n'
         await update.message.reply_text(
             response,
             reply_markup=ReplyKeyboardRemove(),
